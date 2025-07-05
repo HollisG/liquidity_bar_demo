@@ -4,12 +4,30 @@ from datetime import datetime, timedelta
 from core import ExchangeState
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+from matplotlib import font_manager
 import polars as F
+import os
 import pandas as pd
 C = F.col
 import time 
 
-plt.rcParams['font.family'] = 'SimHei'        # 设置中文字体为黑体
+# 常见的中文字体候选
+st.write(os.path.exists('./fonts/SimHei.ttf'))
+font_path = './fonts/SimHei.ttf'  # 字体文件路径
+font_prop = font_manager.FontProperties(fname=font_path)
+# plt.rcParams['font.family'] = font_prop.get_name()
+# print("✅ 加载字体成功：", font_prop.get_name())  # 可打印出来检查
+
+# font_path = os.path.join("fonts", "NotoSansSC-Regular.otf")
+# if os.path.exists(font_path):
+#     font_prop = font_manager.FontProperties(fname=font_path)
+#     plt.rcParams['font.family'] = font_prop.get_name()
+#     print("✅ 加载字体成功：", font_prop.get_name())  # 可打印出来检查
+# else:
+#     plt.rcParams['font.family'] = 'sans-serif'
+#     print("❌ 字体文件未找到，使用默认字体")
+
+# plt.rcParams['font.family'] = 'Microsoft YaHei'#'SimHei'        # 设置中文字体为黑体
 plt.rcParams['axes.unicode_minus'] = False    # 解决负号显示问题
 
 st.set_page_config(layout="wide")
@@ -137,24 +155,24 @@ for drink_name in exchange.get_drink_names():
     # 1. 酒价 vs 交易次数
     axes[0].plot(range(1, len(df_trades)+1),df_trades['price'], marker='o', linestyle='-')
     # axes[0].set_xlabel("交易次数")
-    axes[0].set_ylabel("酒价")
-    axes[0].set_title(f"{drink_name} 价格 vs 交易次数")
+    axes[0].set_ylabel("酒价",fontproperties=font_prop)
+    axes[0].set_title(f"{drink_name} 价格 vs 交易次数",fontproperties=font_prop)
     axes[0].set_xlim([-1, max(len(df_trades),12) + 2])
     axes[0].xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
 
     # 2. 酒价 vs 时间
     axes[1].plot(df_by_time['time'], df_by_time['last_price'], marker='o', linestyle='-')
-    axes[1].set_ylabel("酒价")
+    axes[1].set_ylabel("酒价",fontproperties=font_prop)
     axes[1].set_xlim([-1, max(df_by_time['time'].max(),60) + 5])
-    axes[1].set_title(f"{drink_name} 价格 vs 时间(分钟)")
+    axes[1].set_title(f"{drink_name} 价格 vs 时间(分钟)",fontproperties=font_prop)
 
     # 3. 净交易量柱状图
     colors = ['red' if v > 0 else 'green' for v in df_by_time['net_qty_sum']]
     axes[2].bar(df_by_time['time'], df_by_time['net_qty_sum'], color=colors, width=1)# 
     axes[2].set_xlim([-1, max(df_by_time['time'].max(),60) + 5])
-    axes[2].set_ylabel("净买卖量")
-    axes[2].set_xlabel("时间(分钟)")
-    axes[2].set_title("净买卖量 vs 时间(分钟)")
+    axes[2].set_ylabel("净买卖量",fontproperties=font_prop)
+    axes[2].set_xlabel("时间(分钟)",fontproperties=font_prop)
+    axes[2].set_title("净买卖量 vs 时间(分钟)",fontproperties=font_prop)
 
     plt.tight_layout()
     st.pyplot(fig)
