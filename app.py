@@ -13,6 +13,7 @@ import time
 
 # 常见的中文字体候选
 st.write(os.path.exists('./fonts/SimHei.ttf'))
+
 font_path = './fonts/SimHei.ttf'  # 字体文件路径
 font_prop = font_manager.FontProperties(fname=font_path)
 # plt.rcParams['font.family'] = font_prop.get_name()
