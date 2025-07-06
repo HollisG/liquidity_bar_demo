@@ -1,7 +1,7 @@
 # bar_exchange_demo/app.py
 import streamlit as st
 from datetime import datetime, timedelta
-from core import ExchangeState
+from core import ExchangeState, Drink, User
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from matplotlib import font_manager
@@ -9,12 +9,46 @@ import polars as F
 import os
 import pandas as pd
 C = F.col
-import time 
+import time, string
+
+if 'initialized' not in st.session_state:
+    st.session_state.initialized = False
+    st.session_state.exchange = ExchangeState()
+
+exchange = st.session_state.exchange
+
+if not st.session_state.initialized:
+    st.title("🍻 初始化交易所系统")
+
+    num_users = st.number_input("消费者数量", min_value=1, max_value=10, value=4)
+    num_drinks = st.number_input("酒款数量", min_value=1, max_value=10, value=3)
+
+    with st.form("init_form"):
+        default_user_names = [f"user_{i}" for i in range(num_users)]
+        default_drink_names = [f"啤酒{c}" for c in string.ascii_uppercase[:num_drinks]]
+
+        st.write("🍺 酒款设置：")
+        drink_prices = [st.number_input(f"{default_drink_names[i]} 初始价格", min_value=0.1, value=10.0)
+                        for i in range(num_drinks)]
+
+        submitted = st.form_submit_button("开始使用系统")
+        if submitted:
+            # 初始化
+            for name in default_user_names:
+                exchange.users.append(User(name))
+            for name, price in zip(default_drink_names, drink_prices):
+                exchange.drinks[name] = Drink(name, price)
+
+            st.session_state.initialized = True
+            st.rerun()
+
+    st.stop()
+
 
 # 常见的中文字体候选
-st.write(os.path.exists('./fonts/SimHei.ttf'))
+st.write(os.path.exists('./fonts/simhei.ttf'))
 
-font_path = './fonts/SimHei.ttf'  # 字体文件路径
+font_path = './fonts/simhei.ttf'  # 字体文件路径
 font_prop = font_manager.FontProperties(fname=font_path)
 # plt.rcParams['font.family'] = font_prop.get_name()
 # print("✅ 加载字体成功：", font_prop.get_name())  # 可打印出来检查
@@ -34,10 +68,9 @@ plt.rcParams['axes.unicode_minus'] = False    # 解决负号显示问题
 st.set_page_config(layout="wide")
 
 # 初始化 session state
-if 'exchange' not in st.session_state:
-    st.session_state.exchange = ExchangeState()
-# st.write("✅ 页面加载成功")
-exchange = st.session_state.exchange
+# if 'exchange' not in st.session_state:
+#     st.session_state.exchange = ExchangeState()
+# exchange = st.session_state.exchange
 
 # auto_run = st.sidebar.checkbox("自动推进时间（每秒+1分钟）")
 # refresh_button = st.sidebar.button("手动刷新图表")

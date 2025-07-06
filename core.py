@@ -82,16 +82,18 @@ class User:
 class ExchangeState:
     def __init__(self):
         self.current_time = 0 #datetime(2025, 1, 1, 0, 0, 0)#datetime.now()
-        self.users = [User(name) for name in ["Alice", "Bob", "Carol", "Dave"]]
-        self.drinks = {
-            name: Drink(name, init_price)
-            for name, init_price in {
-                "啤酒": 10.0,
-                "红酒": 12.0,
-                # "威士忌": 15.0,
-                # "伏特加": 8.0,
-            }.items()
-        }
+        self.drinks = {}
+        self.users = []
+        # self.users = [User(name) for name in ["Alice", "Bob", "Carol", "Dave"]]
+        # self.drinks = {
+        #     name: Drink(name, init_price)
+        #     for name, init_price in {
+        #         "啤酒": 10.0,
+        #         "红酒": 12.0,
+        #         # "威士忌": 15.0,
+        #         # "伏特加": 8.0,
+        #     }.items()
+        # }
         self.history = []
         self.total_recharge = 0.0  # 总营收
         self.total_coupon_count = 0 # 在外总酒券
