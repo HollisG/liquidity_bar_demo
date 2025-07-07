@@ -1,21 +1,26 @@
 from datetime import datetime, timedelta
 import copy
 import pandas as pd
+import numpy as np
 import polars as F
 C = F.col
 
 class Drink:
-    def __init__(self, name, init_price):
+    def __init__(self, name, init_price, base_price, halflife, price_impulse):
         self.name = name
         self.price = init_price
+        self.base_price = base_price
+        self.halflife = halflife
         self.price_history = [init_price]
+        self.price_impulse = price_impulse
 
     def update_price(self, delta):
         self.price = max(0.01, self.price + delta)
         self.price_history.append(self.price)
 
-    def mean_revert(self, anchor=10.0, strength=0.01):
-        self.update_price(strength * (anchor - self.price))
+    def mean_revert(self, minute):
+        decay_factor = np.exp(-np.log(2) * minute / self.halflife)
+        self.update_price(decay_factor * (self.base_price - self.price))
 
 
 class User:
@@ -80,7 +85,7 @@ class User:
 
 
 class ExchangeState:
-    def __init__(self):
+    def __init__(self, fee=0.5):
         self.current_time = 0 #datetime(2025, 1, 1, 0, 0, 0)#datetime.now()
         self.drinks = {}
         self.users = []
@@ -100,7 +105,7 @@ class ExchangeState:
         self.total_coupon_value = 0.0 #在外总酒券价值
         self.total_stored_value = 0 # 在外总储值金额
         self.net_revenue = 0.0  # 净利润
-        self.fee = 0.5  # 每杯的固定手续费
+        self.fee = fee  # 每杯的固定手续费
         # 交易记录，格式：{酒名: [{"time": datetime, "type": "buy"/"sell", "qty": int}, ...]}
         self.trade_records = {}
 
@@ -137,7 +142,7 @@ class ExchangeState:
         return self.drinks[drink_name].price
 
     def record_trade(self, drink_name, price, net_qty):
-        print('record_trade')
+        # print('record_trade')
         self.trade_records.setdefault(drink_name, []).append({
             "time": self.current_time,
             "price": price,
@@ -147,7 +152,7 @@ class ExchangeState:
     def get_trade_df(self, drink_name):
         
         records = self.trade_records.get(drink_name, [])
-        print(records)
+        # print(records)
         if not records:
             return F.DataFrame(schema=["time", "price", "net_qty"])
         return F.DataFrame(records)
@@ -180,7 +185,7 @@ class ExchangeState:
         self._save_state()
         self.current_time += minutes#timedelta(minutes=minutes)
         for drink_name, drink in self.drinks.items():
-            drink.mean_revert()
+            drink.mean_revert(minutes)
             self.record_trade(drink_name, drink.price, 0)
 
     def rewind_time(self, minutes):
@@ -207,7 +212,7 @@ class ExchangeState:
         user.buy(drink_name, qty, unit_price)
         # self.revenue += total_price
         # self.net_revenue += self.fee * qty
-        drink.update_price(+0.2 * qty)
+        drink.update_price(drink.price_impulse * qty)
         self.record_trade(drink_name, drink.price, qty)
 
     def sell(self, user_name, drink_name, qty):
@@ -218,7 +223,7 @@ class ExchangeState:
         # total = (drink.price - self.fee) * qty
         # self.revenue -= total
         # self.net_revenue -= self.fee * qty
-        drink.update_price(-0.2 * qty)
+        drink.update_price(-drink.price_impulse * qty)
         self.record_trade(drink_name, drink.price, -qty)
 
     def consume(self, user_name, drink_name):

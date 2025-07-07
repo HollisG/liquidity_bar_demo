@@ -13,40 +13,57 @@ import time, string
 
 if 'initialized' not in st.session_state:
     st.session_state.initialized = False
-    st.session_state.exchange = ExchangeState()
+else:
+    exchange = st.session_state.exchange
+    # st.session_state.exchange = ExchangeState()
 
-exchange = st.session_state.exchange
+# exchange = st.session_state.exchange
 
 if not st.session_state.initialized:
     st.title("🍻 初始化交易所系统")
+    
+    num_users = st.number_input("消费者数量", min_value=1, max_value=10, value=2)
+    num_drinks = st.number_input("酒款数量", min_value=1, max_value=10, value=2)
+    fee = st.number_input("每杯交易手续费（元）", min_value=0.0, value=0.5, step=0.1)
 
-    num_users = st.number_input("消费者数量", min_value=1, max_value=10, value=4)
-    num_drinks = st.number_input("酒款数量", min_value=1, max_value=10, value=3)
+    st.session_state.exchange = ExchangeState(fee=fee)
+    exchange = st.session_state.exchange
 
     with st.form("init_form"):
-        default_user_names = [f"user_{i}" for i in range(num_users)]
-        default_drink_names = [f"啤酒{c}" for c in string.ascii_uppercase[:num_drinks]]
+        default_user_names = [f"user_{c}" for c in string.ascii_uppercase[:num_users]]
+        default_drink_names = [f"啤酒{i+1}" for i in range(num_drinks)]
+
+        st.write("👤 用户列表：")
+        for name in default_user_names:
+            st.write(f"- {name}")
 
         st.write("🍺 酒款设置：")
-        drink_prices = [st.number_input(f"{default_drink_names[i]} 初始价格", min_value=0.1, value=10.0)
-                        for i in range(num_drinks)]
+        drink_inputs = []
+        for i in range(num_drinks):
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                init_price = st.number_input(f"{default_drink_names[i]} 初始价格", min_value=0.1, value=50.0, key=f"init_{i}")
+            with col2:
+                base_price = st.number_input(f"{default_drink_names[i]} 回归价格", min_value=0.1, value=50.0, key=f"base_{i}")
+            with col3:
+                halflife = st.number_input(f"{default_drink_names[i]} 半衰期(min)", min_value=1.0, value=60.0, key=f"hl_{i}")
+            with col4:
+                price_impulse = st.number_input(f"{default_drink_names[i]} 价格敏感度(￥/杯)", min_value=1.0, value=2.0, key=f"pi_{i}")
+            drink_inputs.append((default_drink_names[i], init_price, base_price, halflife, price_impulse))
 
         submitted = st.form_submit_button("开始使用系统")
         if submitted:
             # 初始化
             for name in default_user_names:
                 exchange.users.append(User(name))
-            for name, price in zip(default_drink_names, drink_prices):
-                exchange.drinks[name] = Drink(name, price)
+            for name, init_price, base_price, halflife,price_impulse in drink_inputs:
+                exchange.drinks[name] = Drink(name, init_price, base_price, halflife,price_impulse)
 
             st.session_state.initialized = True
             st.rerun()
 
-    st.stop()
-
 
 # 常见的中文字体候选
-st.write(os.path.exists('./fonts/simhei.ttf'))
 
 font_path = './fonts/simhei.ttf'  # 字体文件路径
 font_prop = font_manager.FontProperties(fname=font_path)
